@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { Friend, EVENT_EMOJI, initials, avatarTextColor } from '@/lib/types';
 import { formatBirthday, daysUntilBirthday } from '@/lib/date-utils';
-import { giftHref, priceLabel } from '@/lib/gift-utils';
 import { BirthdayBadge } from './BirthdayBadge';
+import { LatestGiftPreview } from './LatestGiftPreview';
 
 export function FriendCard({ friend, expanded = false }: { friend: Friend; expanded?: boolean }) {
   const daysUntil = daysUntilBirthday(friend.birthday, friend.timezone);
@@ -35,25 +35,7 @@ export function FriendCard({ friend, expanded = false }: { friend: Friend; expan
           {pending > 0 ? ` · ${pending} gift idea${pending > 1 ? 's' : ''}` : ''}
           {pending === 0 && sent > 0 ? ` · sorted ✓` : ''}
         </div>
-        {expanded && latest && (
-          <div className="flex items-center gap-1.5 mt-1.5 pt-1.5 border-t border-dashed border-line text-xs">
-            <span className="text-[10px] uppercase tracking-wide text-muted flex-shrink-0">Latest idea</span>
-            <a
-              href={giftHref(latest)}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="text-header font-medium truncate hover:underline min-w-0"
-            >
-              {latest.title}
-            </a>
-            {priceLabel(latest) && (
-              <span className="ml-auto flex-shrink-0 bg-cream text-ink font-mono text-[10.5px] px-1.5 py-0.5 rounded-md">
-                {priceLabel(latest)}
-              </span>
-            )}
-          </div>
-        )}
+        {expanded && latest && <LatestGiftPreview gift={latest} />}
       </div>
     </Link>
   );

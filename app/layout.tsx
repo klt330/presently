@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { Fraunces, Inter, IBM_Plex_Mono, Pacifico } from 'next/font/google';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { signOut } from '@/lib/actions';
 import './globals.css';
 
 const display = Fraunces({
@@ -59,9 +58,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <Link href="/friends/new" className="bg-white text-header border border-white rounded-lg px-3.5 py-1.5 font-medium hover:bg-pink hover:border-pink transition-colors focus-ring">
                   + Add friend
                 </Link>
-                <form action={signOut}>
-                  <button className="text-white/70 hover:text-white text-xs focus-ring">Log out</button>
-                </form>
+                <Link href="/settings" className="text-white/70 hover:text-white text-xs focus-ring">Settings</Link>
               </nav>
             ) : (
               <span className="text-xs text-white/70">Not signed in</span>

@@ -35,6 +35,10 @@ export default function LoginPage() {
       {status === 'sent' ? (
         <div className="bg-pink text-header-dark rounded-2xl px-4 py-3 text-sm text-center">
           Check <strong>{email}</strong> for a magic link to sign in.
+          <p className="mt-2 text-xs">
+            Using Outlook or Hotmail? Its link-scanning can break this — try a Gmail
+            or other non-Microsoft address if it doesn't work.
+          </p>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-3">
@@ -63,3 +67,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+

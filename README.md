@@ -46,6 +46,25 @@ You'll need three accounts. Takes about 10 minutes total.
 5. Go to **Authentication → Providers**, confirm **Email** is enabled (it is by default).
 6. Go to **Authentication → URL Configuration** and add your future site URL to "Redirect URLs" — for now add `http://localhost:3000/auth/callback`; you'll add your real domain later in step 5.
 
+**Known issue — Outlook/Hotmail link scanning:** login uses a magic link (not a
+password). Outlook and Hotmail's "Safe Links" feature automatically pre-visits
+every link in an email to scan it, which silently uses up the one-time login
+link before you ever click it yourself — you'll just get bounced back to the
+login page with no error. **Workaround for now:** log in with a non-Microsoft
+email address (Gmail, iCloud, etc.) if you have one.
+
+**Real fix, once you're ready:** switch login to a typed 6-digit code instead
+of a link — a scanner can't "click" a code you haven't read yet. This requires
+editing Supabase's email template, which (as of June 2026) requires a custom
+SMTP provider to be configured first. If you don't own a domain, the
+lowest-effort option is your own **Gmail account** — no domain needed:
+1. Turn on 2-Step Verification at https://myaccount.google.com
+2. Under **Security → App passwords**, generate one for "Mail"
+3. In Supabase: **Authentication → SMTP Settings** → enable Custom SMTP →
+   Host `smtp.gmail.com`, Port `587`, Username your Gmail address, Password
+   the app password you generated
+4. Ping me once that's done and I'll switch the login page back to the code flow and give you the email template to paste in.
+
 ### Resend (sends the reminder emails)
 1. Go to https://resend.com → sign up.
 2. Go to **API Keys → Create API Key**. Copy it — you'll need it in step 3.
@@ -100,7 +119,7 @@ git push -u origin main
 1. Copy your live Vercel URL.
 2. Back in Supabase → **Authentication → URL Configuration**, add
    `https://your-vercel-url.vercel.app/auth/callback` to Redirect URLs.
-3. Visit your live URL, enter your email, and check your inbox for the magic link.
+3. Visit your live URL, enter your email, and check your inbox for the magic link. (If you're on Outlook/Hotmail and it bounces you back to login, see the known issue above.)
 
 You're in. The daily reminder check is already scheduled (see `vercel.json`) —
 Vercel will call it once a day automatically; no extra setup needed.

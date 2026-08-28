@@ -1,24 +1,19 @@
 'use client';
 
-import { useRef, useState, useTransition } from 'react';
+import { useState } from 'react';
 import { addGift } from '@/lib/actions';
 
 export function AddGiftForm({ friendId }: { friendId: string }) {
-  const formRef = useRef<HTMLFormElement>(null);
-  const [isPending, startTransition] = useTransition();
   const [expanded, setExpanded] = useState(false);
+  const boundAddGift = addGift.bind(null, friendId);
 
   return (
     <form
-      ref={formRef}
       className="flex flex-col sm:flex-row gap-2"
-      action={(formData) =>
-        startTransition(async () => {
-          await addGift(friendId, formData);
-          formRef.current?.reset();
-          setExpanded(false);
-        })
-      }
+      action={async (formData) => {
+        await boundAddGift(formData);
+        setExpanded(false);
+      }}
     >
       <input
         name="url"
@@ -35,10 +30,9 @@ export function AddGiftForm({ friendId }: { friendId: string }) {
       )}
       <button
         type="submit"
-        disabled={isPending}
-        className="rounded-xl bg-bow text-white text-sm font-medium px-4 py-2 hover:bg-bow-dark transition-colors disabled:opacity-60 focus-ring whitespace-nowrap"
+        className="rounded-xl bg-bow text-white text-sm font-medium px-4 py-2 hover:bg-bow-dark transition-colors focus-ring whitespace-nowrap"
       >
-        {isPending ? 'Adding…' : '+ Add'}
+        + Add
       </button>
     </form>
   );

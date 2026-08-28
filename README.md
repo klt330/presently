@@ -1,0 +1,117 @@
+# Presently 🎀
+
+A birthday and gift-reminder app: track friends' birthdays, save gift ideas
+or links, and get emailed a week before each birthday.
+
+**What's built (v1):**
+- Add/edit/remove friends with birthday, timezone, city, address, and a short bio
+- Add gift ideas by pasting a link (auto-fetches title + image) or typing free text
+- Mark gifts as idea / purchased / sent
+- Dashboard sorted by soonest birthday, timezone-aware countdown
+- Email reminder 7 days before each birthday (daily automated check)
+- Login by email magic link — built multi-user-ready, even though it's just you for now
+
+**Deliberately deferred (v2):** auto-suggesting gifts from a friend's bio via
+web search. Get the rest working first, then we can add this.
+
+---
+
+## 1. Create your accounts (all free tiers)
+
+You'll need three accounts. Takes about 10 minutes total.
+
+### Supabase (database + login)
+1. Go to https://supabase.com → sign up → **New project**.
+2. Pick any name/region and a database password (save it somewhere, you likely won't need it again).
+3. Once the project finishes provisioning, go to **Project Settings → API**. You'll need three values from this page in step 3 below: `Project URL`, `anon public` key, and `service_role` key (click "Reveal" on the last one).
+4. Go to **SQL Editor → New query**, paste in the entire contents of `supabase/schema.sql` from this project, and click **Run**. This creates the `friends` and `gifts` tables with the right security rules.
+5. Go to **Authentication → Providers**, confirm **Email** is enabled (it is by default).
+6. Go to **Authentication → URL Configuration** and add your future site URL to "Redirect URLs" — for now add `http://localhost:3000/auth/callback`; you'll add your real domain later in step 5.
+
+### Resend (sends the reminder emails)
+1. Go to https://resend.com → sign up.
+2. Go to **API Keys → Create API Key**. Copy it — you'll need it in step 3.
+3. That's it for now. Resend lets you send from `onboarding@resend.dev` immediately with no setup, which is fine for personal use. (Later, if you want emails to say "from you," add and verify your own domain under **Domains**.)
+
+### Vercel (hosting)
+1. Go to https://vercel.com → sign up (easiest: "Continue with GitHub").
+2. If you don't already have a GitHub account, make one at https://github.com — you'll push this project's code there so Vercel can deploy it.
+
+---
+
+## 2. Push this code to GitHub
+
+From this project folder on your computer:
+
+```bash
+git init
+git add .
+git commit -m "Initial commit"
+```
+
+Then create a new empty repo on GitHub (github.com → New repository → don't
+initialize with a README), and run the two commands it shows you, e.g.:
+
+```bash
+git remote add origin https://github.com/YOUR_USERNAME/presently.git
+git branch -M main
+git push -u origin main
+```
+
+---
+
+## 3. Import the project into Vercel
+
+1. In Vercel: **Add New → Project**, choose the `presently` repo you just pushed.
+2. Before deploying, expand **Environment Variables** and add these (values from step 1):
+
+   | Name | Value |
+   |---|---|
+   | `NEXT_PUBLIC_SUPABASE_URL` | from Supabase API settings |
+   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | from Supabase API settings |
+   | `SUPABASE_SERVICE_ROLE_KEY` | from Supabase API settings |
+   | `RESEND_API_KEY` | from Resend |
+   | `CRON_SECRET` | any random long string you make up (e.g. run `openssl rand -hex 32`) |
+
+3. Click **Deploy**. In a minute or two you'll get a live URL like `presently-yourname.vercel.app`.
+
+---
+
+## 4. Connect the pieces
+
+1. Copy your live Vercel URL.
+2. Back in Supabase → **Authentication → URL Configuration**, add
+   `https://your-vercel-url.vercel.app/auth/callback` to Redirect URLs.
+3. Visit your live URL, enter your email, and check your inbox for the magic link.
+
+You're in. The daily reminder check is already scheduled (see `vercel.json`) —
+Vercel will call it once a day automatically; no extra setup needed.
+
+---
+
+## 5. (Optional) Add a custom domain
+
+In your Vercel project → **Settings → Domains**, add a domain you own and
+follow the DNS instructions shown. Then add
+`https://yourdomain.com/auth/callback` to Supabase's Redirect URLs too.
+
+---
+
+## Local development
+
+```bash
+npm install
+cp .env.example .env.local   # fill in the same values as step 3 above
+npm run dev
+```
+
+Visit http://localhost:3000.
+
+## Notes on the "shipping heads-up" and gift suggestions
+
+The order-by date shown on each friend's page is a simple 5-day-before
+heuristic based on their timezone, not a live shipping-carrier lookup — real
+regional delivery-cutoff data is a bigger integration to add later if it's
+worth it. Gift auto-suggestions from a friend's bio (feature 3) work the same
+way: intentionally left out of v1 so we can get the core flow live and tested
+first.

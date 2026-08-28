@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { AVATAR_COLORS } from '@/lib/types';
+import { AVATAR_COLORS, EVENT_TYPES, EventType } from '@/lib/types';
 
 async function requireUser() {
   const supabase = createClient();
@@ -14,25 +14,39 @@ async function requireUser() {
   return { supabase, user };
 }
 
+function parseEventType(raw: FormDataEntryValue | null): EventType {
+  const value = String(raw || '');
+  return (EVENT_TYPES as string[]).includes(value) ? (value as EventType) : 'Birthday';
+}
+
 export async function addFriend(formData: FormData) {
   const { supabase, user } = await requireUser();
 
   const name = String(formData.get('name') || '').trim();
+  const event_type = parseEventType(formData.get('event_type'));
   const birthday = String(formData.get('birthday') || '');
   const timezone = String(formData.get('timezone') || 'America/New_York');
   const city = String(formData.get('city') || '').trim() || null;
   const address = String(formData.get('address') || '').trim() || null;
   const bio = String(formData.get('bio') || '').trim() || null;
   const birth_year_known = formData.get('birth_year_known') === 'on';
-  const color = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
 
   if (!name || !birthday) return;
+
+  // Cycle through the four brand colors in creation order rather than random,
+  // so a person's friend list doesn't end up lopsided toward one color.
+  const { count } = await supabase
+    .from('friends')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id);
+  const color = AVATAR_COLORS[(count ?? 0) % AVATAR_COLORS.length];
 
   const { data, error } = await supabase
     .from('friends')
     .insert({
       user_id: user.id,
       name,
+      event_type,
       birthday,
       birth_year_known,
       timezone,
@@ -55,6 +69,7 @@ export async function updateFriend(friendId: string, formData: FormData) {
   const { supabase } = await requireUser();
 
   const name = String(formData.get('name') || '').trim();
+  const event_type = parseEventType(formData.get('event_type'));
   const birthday = String(formData.get('birthday') || '');
   const timezone = String(formData.get('timezone') || 'America/New_York');
   const city = String(formData.get('city') || '').trim() || null;
@@ -64,7 +79,7 @@ export async function updateFriend(friendId: string, formData: FormData) {
 
   const { error } = await supabase
     .from('friends')
-    .update({ name, birthday, timezone, city, address, bio, birth_year_known })
+    .update({ name, event_type, birthday, timezone, city, address, bio, birth_year_known })
     .eq('id', friendId);
 
   if (error) throw new Error(error.message);
@@ -90,6 +105,7 @@ export async function addGift(friendId: string, formData: FormData) {
   const rawUrl = String(formData.get('url') || '').trim();
   let title = String(formData.get('title') || '').trim();
   let image_url: string | null = null;
+  let price: string | null = null;
   let source: 'manual' | 'auto' = 'manual';
 
   if (rawUrl) {
@@ -97,6 +113,7 @@ export async function addGift(friendId: string, formData: FormData) {
       const unfurled = await unfurlUrl(rawUrl);
       if (!title) title = unfurled.title || rawUrl;
       image_url = unfurled.image;
+      price = unfurled.price;
       source = 'auto';
     } catch {
       if (!title) title = rawUrl;
@@ -110,6 +127,7 @@ export async function addGift(friendId: string, formData: FormData) {
     title,
     url: rawUrl || null,
     image_url,
+    price,
     status: 'idea',
     source,
   });
@@ -132,18 +150,66 @@ export async function deleteGift(friendId: string, giftId: string) {
   revalidatePath(`/friends/${friendId}`);
 }
 
-/** Fetches a title + preview image for a pasted gift/Amazon link via Microlink's free API. */
-export async function unfurlUrl(url: string): Promise<{ title: string | null; image: string | null }> {
+/**
+ * Fetches a title, preview image, and price (where the page exposes e-commerce
+ * metadata) for a pasted gift/Amazon link via Microlink's free API. Price is
+ * null whenever the source page doesn't expose it — the UI shows "$TBD" in
+ * that case rather than guessing.
+ */
+export async function unfurlUrl(
+  url: string
+): Promise<{ title: string | null; image: string | null; price: string | null }> {
   const res = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}`, {
     next: { revalidate: 60 * 60 * 24 },
   });
-  if (!res.ok) return { title: null, image: null };
+  if (!res.ok) return { title: null, image: null, price: null };
   const json = await res.json();
-  if (json.status !== 'success') return { title: null, image: null };
+  if (json.status !== 'success') return { title: null, image: null, price: null };
+  const rawPrice = json.data?.price ?? json.data?.pricing?.amount ?? null;
   return {
     title: json.data?.title ?? null,
     image: json.data?.image?.url ?? json.data?.logo?.url ?? null,
+    price: rawPrice != null ? String(rawPrice) : null,
   };
+}
+
+const GIFT_KEYWORDS: { match: RegExp; ideas: string[] }[] = [
+  { match: /cook|kitchen|cast.iron|chef/i, ideas: ['Enameled dutch oven', 'Personalized cutting board', 'Spice subscription box', "Sharp chef's knife set"] },
+  { match: /vinyl|record|music/i, ideas: ['Record cleaning kit', 'Turntable slipmat', 'Gift card to a local record shop', 'Vinyl storage crate'] },
+  { match: /tea|cold|always cold|blanket/i, ideas: ['Wool throw blanket', 'Loose-leaf tea sampler', 'Heated pour-over kettle', 'Cozy slipper socks'] },
+  { match: /photo|film|camera/i, ideas: ['Roll of 35mm film', 'Camera strap', 'Photo book of recent trips', 'Darkroom print class'] },
+  { match: /coffee|espresso|cold brew/i, ideas: ['Bag of single-origin beans', 'Pour-over dripper', 'Cold brew concentrate maker'] },
+  { match: /ceramic|pottery|clay/i, ideas: ['Pottery studio class', 'Glazing tool set', 'Handmade ceramic mug'] },
+  { match: /dog|golden retriever|pet/i, ideas: ['Personalized pet bandana', 'Durable chew toy', 'Dog treat subscription box'] },
+  { match: /garden|plant|succulent/i, ideas: ['Rare houseplant', 'Ceramic planter set', 'Gardening tool kit'] },
+  { match: /run|hik|climb|outdoor/i, ideas: ['Insulated water bottle', 'Trail running socks', 'Portable hammock'] },
+  { match: /read|book|novel/i, ideas: ['Indie bookstore gift card', 'Cozy reading blanket', 'Book light'] },
+];
+
+const GIFT_FALLBACK = [
+  'A handwritten card with a shared memory',
+  'A small plant for their desk',
+  'A gift card to their favorite spot',
+  'A cozy candle',
+  'A nice notebook and pen set',
+];
+
+/**
+ * Drafts a gift idea from a friend's bio keywords. Purely a suggestion —
+ * doesn't touch the database. The client drops the result into the title field.
+ */
+export async function generateGiftIdea(friendId: string): Promise<string> {
+  const { supabase } = await requireUser();
+  const { data: friend } = await supabase.from('friends').select('bio').eq('id', friendId).single();
+  const bio = (friend?.bio || '').toLowerCase();
+
+  let pool: string[] = [];
+  for (const k of GIFT_KEYWORDS) {
+    if (k.match.test(bio)) pool = pool.concat(k.ideas);
+  }
+  if (pool.length === 0) pool = GIFT_FALLBACK;
+
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 export async function signOut() {
@@ -151,3 +217,4 @@ export async function signOut() {
   await supabase.auth.signOut();
   redirect('/login');
 }
+

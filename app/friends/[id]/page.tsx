@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { Friend } from '@/lib/types';
+import { Friend, EVENT_EMOJI, initials, avatarTextColor } from '@/lib/types';
 import { formatBirthday, daysUntilBirthday, localTimeLabel, suggestedOrderByDate } from '@/lib/date-utils';
 import { BirthdayBadge } from '@/components/BirthdayBadge';
 import { GiftItem } from '@/components/GiftItem';
@@ -30,15 +30,17 @@ export default async function FriendDetailPage({ params }: { params: { id: strin
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-display font-600 text-xl flex-shrink-0"
-            style={{ backgroundColor: friend.color }}
+            className="w-12 h-12 rounded-2xl flex items-center justify-center font-display font-600 text-xl flex-shrink-0"
+            style={{ backgroundColor: friend.color, color: avatarTextColor(friend.color) }}
           >
-            {friend.name.charAt(0).toUpperCase()}
+            {initials(friend.name)}
           </div>
           <div>
             <h1 className="font-display italic text-2xl leading-tight">{friend.name}</h1>
             <div className="flex items-center gap-2 text-sm text-muted mt-0.5">
               <span>{formatBirthday(friend.birthday)}</span>
+              <span>·</span>
+              <span>{EVENT_EMOJI[friend.event_type]} {friend.event_type}</span>
               <BirthdayBadge daysUntil={daysUntil} />
             </div>
           </div>
@@ -52,7 +54,7 @@ export default async function FriendDetailPage({ params }: { params: { id: strin
       </div>
 
       {friend.bio && (
-        <p className="text-sm text-ink bg-canvas border border-line rounded-2xl px-3.5 py-3 italic">
+        <p className="text-sm text-ink bg-cream border border-line rounded-2xl px-3.5 py-3 italic">
           “{friend.bio}”
         </p>
       )}
@@ -75,8 +77,8 @@ export default async function FriendDetailPage({ params }: { params: { id: strin
           </div>
         )}
         {daysUntil <= 30 && daysUntil >= 0 && (
-          <div className="rounded-xl border border-amber/40 bg-amber-soft px-3 py-2.5 sm:col-span-2">
-            <div className="text-xs text-ink/70">Shipping heads-up</div>
+          <div className="rounded-xl border border-yellow/60 bg-yellow/25 px-3 py-2.5 sm:col-span-2">
+            <div className="text-xs text-muted">Shipping heads-up</div>
             <div>Order by <strong>{suggestedOrderByDate(friend.birthday, friend.timezone)}</strong> to arrive in time, their time.</div>
           </div>
         )}
@@ -91,7 +93,7 @@ export default async function FriendDetailPage({ params }: { params: { id: strin
             gifts.map((gift) => <GiftItem key={gift.id} friendId={friend.id} gift={gift} />)
           ) : (
             <p className="text-sm text-muted italic">
-              No gift ideas yet — paste a link below, or check back soon for suggestions based on their bio.
+              No gift ideas yet — paste a link below, type one in, or try the magic idea button.
             </p>
           )}
         </div>
@@ -99,7 +101,7 @@ export default async function FriendDetailPage({ params }: { params: { id: strin
       </div>
 
       <form action={deleteFriend.bind(null, friend.id)} className="pt-4 border-t border-line">
-        <button className="text-xs text-muted hover:text-ribbon-dark focus-ring">
+        <button className="text-xs text-muted hover:text-header-dark focus-ring">
           Remove {friend.name} from Presently
         </button>
       </form>

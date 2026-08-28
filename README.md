@@ -3,16 +3,34 @@
 A birthday and gift-reminder app: track friends' birthdays, save gift ideas
 or links, and get emailed a week before each birthday.
 
-**What's built (v1):**
-- Add/edit/remove friends with birthday, timezone, city, address, and a short bio
-- Add gift ideas by pasting a link (auto-fetches title + image) or typing free text
+**What's built (v2):**
+- Add/edit/remove friends with birthday, event type, timezone, city, address, and a short bio
+- Event types: Birthday 🎂, Wedding anniversary 💍, Celebration 🎉, Child's birthday 🧸
+- Add gift ideas by pasting a link (auto-fetches title, image, and price where the page exposes it — otherwise shows "$TBD") or typing free text
+- Typed (unlinked) gift ideas open a Google search for that idea when clicked
+- "✨ Magic idea" button drafts a gift suggestion from a friend's bio
 - Mark gifts as idea / purchased / sent
-- Dashboard sorted by soonest birthday, timezone-aware countdown
+- Dashboard sorted by soonest birthday; the "coming up this week" cards also preview the latest gift idea and its price
 - Email reminder 7 days before each birthday (daily automated check)
 - Login by email magic link — built multi-user-ready, even though it's just you for now
 
-**Deliberately deferred (v2):** auto-suggesting gifts from a friend's bio via
-web search. Get the rest working first, then we can add this.
+**Deliberately deferred:** true bio-driven web search for gift recommendations
+(the current magic idea button uses a keyword-matched suggestion pool, not a
+live search) — a good next step once this is in daily use.
+
+---
+
+## Upgrading from v1 (already deployed)
+
+If you deployed the earlier version already, run this once in Supabase
+**SQL Editor** before pulling the new code — it adds the two new columns
+without touching your existing friends or gifts:
+
+```
+supabase/migration_002_event_type_and_price.sql
+```
+
+New installs don't need this — `supabase/schema.sql` already includes it.
 
 ---
 

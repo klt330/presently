@@ -23,15 +23,17 @@ export default function LoginPage() {
   return (
     <div className="max-w-sm mx-auto mt-16">
       <div className="text-center mb-6">
-        <div className="text-3xl mb-2">🎀</div>
-        <h1 className="font-display italic text-2xl">Welcome to Presently</h1>
+        <svg viewBox="-40 -22 80 62" className="w-7 h-7 mx-auto mb-2 text-header" fill="none" stroke="currentColor" strokeWidth={4} strokeLinecap="round">
+          <path d="M0,0 C-10,-14 -30,-10 -22,4 C-16,14 -4,10 0,0 C4,10 16,14 22,4 C30,-10 10,-14 0,0 M0,0 C-4,10 -10,26 -20,30 M0,0 C4,10 10,26 20,30" />
+        </svg>
+        <h1 className="font-logo text-3xl text-ink">Presently</h1>
         <p className="text-muted text-sm mt-1">
           Never miss a birthday, or the perfect gift for it.
         </p>
       </div>
 
       {status === 'sent' ? (
-        <div className="bg-bow-soft text-bow-dark rounded-2xl px-4 py-3 text-sm text-center">
+        <div className="bg-pink text-header-dark rounded-2xl px-4 py-3 text-sm text-center">
           Check <strong>{email}</strong> for a magic link to sign in.
         </div>
       ) : (
@@ -47,12 +49,12 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={status === 'sending'}
-            className="w-full rounded-xl bg-ribbon text-white text-sm font-medium py-2 shadow-pop hover:bg-ribbon-dark transition-colors disabled:opacity-60 focus-ring"
+            className="w-full rounded-xl bg-header text-white text-sm font-medium py-2 shadow-pop hover:bg-header-dark transition-colors disabled:opacity-60 focus-ring"
           >
             {status === 'sending' ? 'Sending link…' : 'Send magic link'}
           </button>
           {status === 'error' && (
-            <p className="text-xs text-ribbon-dark text-center">
+            <p className="text-xs text-header-dark text-center">
               Something went wrong — try again.
             </p>
           )}

@@ -7,16 +7,13 @@ html {
 }
 
 body {
-  background-color: #FAF8FF;
-  background-image:
-    radial-gradient(circle at 1px 1px, rgba(31,27,46,0.05) 1px, transparent 0);
-  background-size: 22px 22px;
-  color: #1F1B2E;
+  background-color: #FFFFFF;
+  color: #413B3B;
 }
 
 ::selection {
-  background: #FFE3EC;
-  color: #D93E70;
+  background: #FFDCEC;
+  color: #9E0233;
 }
 
 /* Signature element: a rotated gift-tag chip used for birthday countdowns */
@@ -53,7 +50,7 @@ body {
 }
 
 .focus-ring:focus-visible {
-  outline: 2px solid #FF5D8F;
+  outline: 2px solid #C2023F;
   outline-offset: 2px;
   border-radius: 0.5rem;
 }

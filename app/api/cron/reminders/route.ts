@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { createServiceClient } from '@/lib/supabase/server';
-import { Friend } from '@/lib/types';
+import { Friend, EVENT_EMOJI } from '@/lib/types';
 import { daysUntilBirthday, formatBirthday } from '@/lib/date-utils';
 
 export const dynamic = 'force-dynamic';
@@ -52,17 +52,17 @@ export async function GET(request: Request) {
           pendingGifts > 0
             ? `${pendingGifts} gift idea${pendingGifts > 1 ? 's' : ''} saved, not yet purchased`
             : 'no gift picked yet';
-        return `<li><strong>${f.name}</strong> — ${formatBirthday(f.birthday)} (${giftNote})</li>`;
+        return `<li>${EVENT_EMOJI[f.event_type]} <strong>${f.name}</strong> — ${formatBirthday(f.birthday)}, ${f.event_type} (${giftNote})</li>`;
       })
       .join('');
 
     await resend.emails.send({
       from: process.env.REMINDER_FROM_EMAIL || 'Presently <onboarding@resend.dev>',
       to: email,
-      subject: `🎀 ${userFriends.length === 1 ? `${userFriends[0].name}'s birthday` : 'Birthdays'} coming up in a week`,
+      subject: `🎀 ${userFriends.length === 1 ? `${userFriends[0].name}'s ${userFriends[0].event_type.toLowerCase()}` : 'A few occasions'} coming up in a week`,
       html: `
-        <div style="font-family: sans-serif; font-size: 14px; color: #1F1B2E;">
-          <p>Heads up — these birthdays are one week away:</p>
+        <div style="font-family: sans-serif; font-size: 14px; color: #413B3B;">
+          <p>Heads up — these are one week away:</p>
           <ul>${rows}</ul>
           <p>Open Presently to check gift ideas or mark one as sent.</p>
         </div>

@@ -1,4 +1,4 @@
-import { Friend } from '@/lib/types';
+import { Friend, EVENT_TYPES } from '@/lib/types';
 import { COMMON_TIMEZONES } from '@/lib/date-utils';
 
 export function FriendForm({
@@ -25,7 +25,21 @@ export function FriendForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-muted mb-1">Birthday</label>
+          <label className="block text-xs font-medium text-muted mb-1">Event type</label>
+          <select
+            name="event_type"
+            defaultValue={friend?.event_type ?? 'Birthday'}
+            className="w-full rounded-xl border border-line px-3 py-2 text-sm bg-white focus-ring"
+          >
+            {EVENT_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-muted mb-1">Date</label>
           <input
             type="date"
             name="birthday"
@@ -34,17 +48,18 @@ export function FriendForm({
             className="w-full rounded-xl border border-line px-3 py-2 text-sm focus-ring"
           />
         </div>
-        <div className="flex items-end pb-2.5">
-          <label className="flex items-center gap-1.5 text-xs text-muted">
-            <input
-              type="checkbox"
-              name="birth_year_known"
-              defaultChecked={friend?.birth_year_known ?? true}
-              className="rounded focus-ring"
-            />
-            I know their birth year
-          </label>
-        </div>
+      </div>
+
+      <div className="flex items-center pb-0.5">
+        <label className="flex items-center gap-1.5 text-xs text-muted">
+          <input
+            type="checkbox"
+            name="birth_year_known"
+            defaultChecked={friend?.birth_year_known ?? true}
+            className="rounded focus-ring"
+          />
+          I know their birth year
+        </label>
       </div>
 
       <div>
@@ -104,7 +119,7 @@ export function FriendForm({
 
       <button
         type="submit"
-        className="w-full rounded-xl bg-ribbon text-white text-sm font-medium py-2.5 shadow-pop hover:bg-ribbon-dark transition-colors focus-ring"
+        className="w-full rounded-xl bg-header text-white text-sm font-medium py-2.5 shadow-pop hover:bg-header-dark transition-colors focus-ring"
       >
         {submitLabel}
       </button>

@@ -8,28 +8,26 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        canvas: '#FAF8FF',
+        canvas: '#FFFFFF',
         surface: '#FFFFFF',
-        ink: '#1F1B2E',
-        muted: '#6B647F',
-        line: '#ECE7F7',
-        ribbon: {
-          DEFAULT: '#FF5D8F',
-          soft: '#FFE3EC',
-          dark: '#D93E70',
+        cream: '#FCF1EC',
+        ink: '#413B3B',
+        muted: '#8C8171',
+        line: '#EEEEEE',
+        header: {
+          DEFAULT: '#C2023F',
+          dark: '#9E0233',
         },
-        bow: {
-          DEFAULT: '#16A399',
-          soft: '#DDF5F2',
-          dark: '#0E7A72',
+        pink: {
+          DEFAULT: '#FFDCEC',
         },
-        amber: {
-          DEFAULT: '#FFB020',
-          soft: '#FFF1D6',
+        yellow: {
+          DEFAULT: '#F4F26F',
         },
       },
       fontFamily: {
         display: ['var(--font-display)'],
+        logo: ['var(--font-logo)'],
         body: ['var(--font-body)'],
         mono: ['var(--font-mono)'],
       },
@@ -48,8 +46,8 @@ const config: Config = {
         '2xl': '1.125rem',
       },
       boxShadow: {
-        card: '0 1px 2px rgba(31,27,46,0.04), 0 6px 16px -8px rgba(31,27,46,0.12)',
-        pop: '0 2px 6px rgba(255,93,143,0.25)',
+        card: '0 1px 2px rgba(65,59,59,0.03), 0 8px 18px -12px rgba(65,59,59,0.18)',
+        pop: '0 2px 6px rgba(194,2,63,0.18)',
       },
       keyframes: {
         wiggle: {
@@ -66,3 +64,4 @@ const config: Config = {
 };
 
 export default config;
+

@@ -39,7 +39,7 @@ export default async function DashboardPage() {
           </h2>
           <div className="space-y-2">
             {soon.map((friend) => (
-              <FriendCard key={friend.id} friend={friend} />
+              <FriendCard key={friend.id} friend={friend} expanded />
             ))}
           </div>
         </section>

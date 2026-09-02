@@ -1,9 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
-export default function LoginPage() {
+function LoginForm() {
+  const searchParams = useSearchParams();
+  const callbackError = searchParams.get('error');
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
@@ -32,12 +35,22 @@ export default function LoginPage() {
         </p>
       </div>
 
+      {callbackError && status !== 'sent' && (
+        <div className="border border-header/40 text-header-dark rounded-2xl px-4 py-3 text-xs mb-3">
+          <strong>Login didn&apos;t complete.</strong> {callbackError}
+          <p className="mt-1.5">
+            Open the link in the same browser you requested it from — email apps
+            often open links in their own in-app browser, which breaks the login.
+          </p>
+        </div>
+      )}
+
       {status === 'sent' ? (
         <div className="bg-pink text-header-dark rounded-2xl px-4 py-3 text-sm text-center">
           Check <strong>{email}</strong> for a magic link to sign in.
           <p className="mt-2 text-xs">
-            Using Outlook or Hotmail? Its link-scanning can break this — try a Gmail
-            or other non-Microsoft address if it doesn't work.
+            Open it in this same browser. If your email app opens it in its own
+            in-app browser, copy the link and paste it here instead.
           </p>
         </div>
       ) : (
@@ -68,4 +81,10 @@ export default function LoginPage() {
   );
 }
 
-
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}

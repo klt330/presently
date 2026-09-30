@@ -39,8 +39,7 @@ function LoginForm() {
         <div className="border border-header/40 text-header-dark rounded-2xl px-4 py-3 text-xs mb-3">
           <strong>Login didn&apos;t complete.</strong> {callbackError}
           <p className="mt-1.5">
-            Open the link in the same browser you requested it from — email apps
-            often open links in their own in-app browser, which breaks the login.
+            The link may have expired or already been used — request a new one below.
           </p>
         </div>
       )}
@@ -49,8 +48,7 @@ function LoginForm() {
         <div className="bg-pink text-header-dark rounded-2xl px-4 py-3 text-sm text-center">
           Check <strong>{email}</strong> for a magic link to sign in.
           <p className="mt-2 text-xs">
-            Open it in this same browser. If your email app opens it in its own
-            in-app browser, copy the link and paste it here instead.
+            You can open it on any device or browser — you&apos;ll land back in this same account.
           </p>
         </div>
       ) : (

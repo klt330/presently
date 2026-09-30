@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+// Legacy PKCE code-exchange handler, kept only so magic links sent before the
+// switch to /auth/confirm (token-hash flow) still resolve. New links use
+// /auth/confirm, which isn't tied to the browser that requested the link.
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');

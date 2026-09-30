@@ -81,7 +81,7 @@ function Landing() {
         </div>
         <p className="font-logo text-header text-base">for the people you&apos;d never want to forget</p>
         <h1 className="font-display italic text-3xl sm:text-[2.4rem] sm:leading-[2.7rem] mt-2 max-w-lg mx-auto">
-          Thoughtful and lasting presents, now yours to gift
+          Be the friend that remembers
         </h1>
         <p className="text-md mt-3 mb-5">Here&apos;s how one birthday goes with Presently.</p>
 

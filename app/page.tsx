@@ -2,7 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { Friend } from '@/lib/types';
 import { daysUntilBirthday } from '@/lib/date-utils';
 import { FriendCard } from '@/components/FriendCard';
-import { EmptyState } from '@/components/EmptyState';
+import { QuickAddFriend } from '@/components/QuickAddFriend';
+import { ExampleFriends } from '@/components/ExampleFriends';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,20 +19,14 @@ export default async function DashboardPage() {
   const soon = sorted.filter((f) => daysUntilBirthday(f.birthday, f.timezone) <= 7);
   const later = sorted.filter((f) => daysUntilBirthday(f.birthday, f.timezone) > 7);
 
-  if (list.length === 0) {
-    return (
-      <EmptyState
-        emoji="🎂"
-        title="No birthdays yet"
-        body="Add your first friend to start tracking birthdays and gift ideas."
-        actionHref="/friends/new"
-        actionLabel="+ Add your first friend"
-      />
-    );
-  }
-
+  // QuickAddFriend stays at the same position in both states so its
+  // client state (success message, focus) survives the first add.
   return (
     <div className="space-y-8">
+      <QuickAddFriend isEmpty={list.length === 0} existingNames={list.map((f) => f.name)} />
+
+      {list.length === 0 && <ExampleFriends />}
+
       {soon.length > 0 && (
         <section>
           <h2 className="text-sm font-semibold text-muted uppercase tracking-wide mb-2.5">

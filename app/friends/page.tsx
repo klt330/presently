@@ -21,9 +21,9 @@ export default async function FriendsPage() {
         <EmptyState
           emoji="📇"
           title="Your friend book is empty"
-          body="Add friends one at a time, or import a contacts file once you have a few."
-          actionHref="/friends/new"
-          actionLabel="+ Add a friend"
+          body="Adding someone takes a few seconds: just a name and a birthday."
+          actionHref="/"
+          actionLabel="+ Quick add friends"
         />
       ) : (
         <div className="space-y-2">

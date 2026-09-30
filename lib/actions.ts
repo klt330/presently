@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { AVATAR_COLORS, EVENT_TYPES, EventType } from '@/lib/types';
+import { COMMON_TIMEZONES } from '@/lib/date-utils';
 
 async function requireUser() {
   const supabase = createClient();
@@ -12,6 +13,67 @@ async function requireUser() {
   } = await supabase.auth.getUser();
   if (!user) redirect('/login');
   return { supabase, user };
+}
+
+// Cycle through the four brand colors in creation order rather than random,
+// so a person's friend list doesn't end up lopsided toward one color.
+async function nextAvatarColor(supabase: ReturnType<typeof createClient>, userId: string) {
+  const { count } = await supabase
+    .from('friends')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId);
+  return AVATAR_COLORS[(count ?? 0) % AVATAR_COLORS.length];
+}
+
+export type QuickAddState = {
+  status: 'idle' | 'added' | 'error';
+  message: string;
+  // Increments on every successful add so the form can reset even when two
+  // friends in a row share a name.
+  added: number;
+};
+
+export async function quickAddFriend(prev: QuickAddState, formData: FormData): Promise<QuickAddState> {
+  const { supabase, user } = await requireUser();
+  const fail = (message: string): QuickAddState => ({ ...prev, status: 'error', message });
+
+  const name = String(formData.get('name') || '').trim();
+  const month = Number(formData.get('month'));
+  const day = Number(formData.get('day'));
+  const yearRaw = String(formData.get('year') || '').trim();
+  const tzRaw = String(formData.get('timezone') || '');
+
+  if (!name) return fail('Add a name.');
+  if (!month || !day) return fail('Pick a month and day.');
+
+  const birth_year_known = yearRaw !== '';
+  const thisYear = new Date().getFullYear();
+  if (birth_year_known && !/^\d{4}$/.test(yearRaw)) return fail('Year should look like 1990.');
+  // 2000 is a leap year, so Feb 29 birthdays still fit when the year is unknown.
+  const year = birth_year_known ? Number(yearRaw) : 2000;
+  if (year < 1900 || year > thisYear) return fail(`Year should be between 1900 and ${thisYear}.`);
+
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCMonth() !== month - 1) return fail("That date doesn't exist.");
+
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const timezone = COMMON_TIMEZONES.some((t) => t.value === tzRaw) ? tzRaw : 'America/New_York';
+
+  const { error } = await supabase.from('friends').insert({
+    user_id: user.id,
+    name,
+    event_type: 'Birthday',
+    birthday: `${year}-${pad(month)}-${pad(day)}`,
+    birth_year_known,
+    timezone,
+    color: await nextAvatarColor(supabase, user.id),
+  });
+
+  if (error) return fail("Couldn't save. Try again.");
+
+  revalidatePath('/');
+  revalidatePath('/friends');
+  return { status: 'added', message: `Added ${name}. Who's next?`, added: prev.added + 1 };
 }
 
 function parseEventType(raw: FormDataEntryValue | null): EventType {
@@ -33,13 +95,7 @@ export async function addFriend(formData: FormData) {
 
   if (!name || !birthday) return;
 
-  // Cycle through the four brand colors in creation order rather than random,
-  // so a person's friend list doesn't end up lopsided toward one color.
-  const { count } = await supabase
-    .from('friends')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', user.id);
-  const color = AVATAR_COLORS[(count ?? 0) % AVATAR_COLORS.length];
+  const color = await nextAvatarColor(supabase, user.id);
 
   const { data, error } = await supabase
     .from('friends')

@@ -61,7 +61,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <Link href="/settings" className="text-white/70 hover:text-white text-xs focus-ring">Settings</Link>
               </nav>
             ) : (
-              <span className="text-xs text-white/70">Not signed in</span>
+              <Link href="/login#email-top" className="text-sm text-white border border-white/50 hover:border-white rounded-lg px-3 py-1.5 focus-ring">
+                Log in
+              </Link>
             )}
           </div>
         </header>

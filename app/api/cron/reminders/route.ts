@@ -2,12 +2,24 @@ import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { createServiceClient } from '@/lib/supabase/server';
 import { Friend, EVENT_EMOJI } from '@/lib/types';
-import { daysUntilBirthday, formatBirthday } from '@/lib/date-utils';
+import { daysUntilBirthday, formatBirthday, suggestedOrderByDate } from '@/lib/date-utils';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 const REMINDER_WINDOW_DAYS = 7;
+
+const HTML_ESCAPES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
+}
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
@@ -47,12 +59,23 @@ export async function GET(request: Request) {
 
     const rows = userFriends
       .map((f) => {
-        const pendingGifts = (f.gifts ?? []).filter((g) => g.status === 'idea').length;
-        const giftNote =
-          pendingGifts > 0
-            ? `${pendingGifts} gift idea${pendingGifts > 1 ? 's' : ''} saved, not yet purchased`
-            : 'no gift picked yet';
-        return `<li>${EVENT_EMOJI[f.event_type]} <strong>${f.name}</strong> — ${formatBirthday(f.birthday)}, ${f.event_type} (${giftNote})</li>`;
+        const ideas = (f.gifts ?? []).filter((g) => g.status === 'idea');
+        const shown = ideas
+          .slice(0, 3)
+          .map((g) =>
+            g.url && /^https?:\/\//i.test(g.url)
+              ? `<a href="${escapeHtml(g.url)}" style="color: #C2023F;">${escapeHtml(g.title)}</a>`
+              : escapeHtml(g.title)
+          )
+          .join(', ');
+        const more = ideas.length > 3 ? ` and ${ideas.length - 3} more` : '';
+        const giftLine = ideas.length > 0 ? `Gift ideas: ${shown}${more}` : 'No gift ideas saved yet';
+        return `
+          <li style="margin-bottom: 12px;">
+            ${EVENT_EMOJI[f.event_type]} <strong>${escapeHtml(f.name)}</strong>, ${formatBirthday(f.birthday)} (${escapeHtml(f.event_type)})<br>
+            <strong>Buy by ${suggestedOrderByDate(f.birthday, f.timezone)}</strong> so it arrives in time, their time.<br>
+            ${giftLine}
+          </li>`;
       })
       .join('');
 
@@ -62,9 +85,9 @@ export async function GET(request: Request) {
       subject: `🎀 ${userFriends.length === 1 ? `${userFriends[0].name}'s ${userFriends[0].event_type.toLowerCase()}` : 'A few occasions'} coming up in a week`,
       html: `
         <div style="font-family: sans-serif; font-size: 14px; color: #413B3B;">
-          <p>Heads up — these are one week away:</p>
-          <ul>${rows}</ul>
-          <p>Open Presently to check gift ideas or mark one as sent.</p>
+          <p>Heads up, these are one week away:</p>
+          <ul style="padding-left: 18px;">${rows}</ul>
+          <p><a href="https://presently.party" style="color: #C2023F;">Open Presently</a> to pick a gift or mark one as sent.</p>
         </div>
       `,
     });

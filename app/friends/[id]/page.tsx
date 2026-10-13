@@ -93,7 +93,7 @@ export default async function FriendDetailPage({ params }: { params: { id: strin
             gifts.map((gift) => <GiftItem key={gift.id} friendId={friend.id} gift={gift} />)
           ) : (
             <p className="text-sm text-muted italic">
-              No gift ideas yet — paste a link below, type one in, or try the magic idea button.
+              No gift ideas yet. Paste a link below, type one in, or try ✨ Magic ideas.
             </p>
           )}
         </div>

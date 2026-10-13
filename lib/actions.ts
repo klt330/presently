@@ -5,6 +5,8 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { AVATAR_COLORS, EVENT_TYPES, EventType } from '@/lib/types';
 import { COMMON_TIMEZONES } from '@/lib/date-utils';
+import { suggestGiftIdeas, type GiftProfile, type MagicIdeasResult } from '@/lib/gift-ideas';
+import { claudeGiftIdeas } from '@/lib/claude-gift-ideas';
 
 async function requireUser() {
   const supabase = createClient();
@@ -229,43 +231,47 @@ export async function unfurlUrl(
   };
 }
 
-const GIFT_KEYWORDS: { match: RegExp; ideas: string[] }[] = [
-  { match: /cook|kitchen|cast.iron|chef/i, ideas: ['Enameled dutch oven', 'Personalized cutting board', 'Spice subscription box', "Sharp chef's knife set"] },
-  { match: /vinyl|record|music/i, ideas: ['Record cleaning kit', 'Turntable slipmat', 'Gift card to a local record shop', 'Vinyl storage crate'] },
-  { match: /tea|cold|always cold|blanket/i, ideas: ['Wool throw blanket', 'Loose-leaf tea sampler', 'Heated pour-over kettle', 'Cozy slipper socks'] },
-  { match: /photo|film|camera/i, ideas: ['Roll of 35mm film', 'Camera strap', 'Photo book of recent trips', 'Darkroom print class'] },
-  { match: /coffee|espresso|cold brew/i, ideas: ['Bag of single-origin beans', 'Pour-over dripper', 'Cold brew concentrate maker'] },
-  { match: /ceramic|pottery|clay/i, ideas: ['Pottery studio class', 'Glazing tool set', 'Handmade ceramic mug'] },
-  { match: /dog|golden retriever|pet/i, ideas: ['Personalized pet bandana', 'Durable chew toy', 'Dog treat subscription box'] },
-  { match: /garden|plant|succulent/i, ideas: ['Rare houseplant', 'Ceramic planter set', 'Gardening tool kit'] },
-  { match: /run|hik|climb|outdoor/i, ideas: ['Insulated water bottle', 'Trail running socks', 'Portable hammock'] },
-  { match: /read|book|novel/i, ideas: ['Indie bookstore gift card', 'Cozy reading blanket', 'Book light'] },
-];
+// Must match the limit inside claim_gift_idea_credit() in supabase/migration_003.
+const DAILY_AI_IDEAS = 15;
 
-const GIFT_FALLBACK = [
-  'A handwritten card with a shared memory',
-  'A small plant for their desk',
-  'A gift card to their favorite spot',
-  'A cozy candle',
-  'A nice notebook and pen set',
-];
-
-/**
- * Drafts a gift idea from a friend's bio keywords. Purely a suggestion —
- * doesn't touch the database. The client drops the result into the title field.
- */
-export async function generateGiftIdea(friendId: string): Promise<string> {
+/** Suggestions only; nothing is saved until the user picks one. */
+export async function generateGiftIdeas(friendId: string, alreadyShown: string[]): Promise<MagicIdeasResult> {
   const { supabase } = await requireUser();
-  const { data: friend } = await supabase.from('friends').select('bio').eq('id', friendId).single();
-  const bio = (friend?.bio || '').toLowerCase();
+  const { data: friend } = await supabase
+    .from('friends')
+    .select('bio, event_type, birthday, birth_year_known, city, timezone, gifts(title)')
+    .eq('id', friendId)
+    .single();
+  if (!friend) return { ideas: [], personalized: false, source: 'rules', remaining: null, limitReached: false };
 
-  let pool: string[] = [];
-  for (const k of GIFT_KEYWORDS) {
-    if (k.match.test(bio)) pool = pool.concat(k.ideas);
+  const profile = friend as unknown as GiftProfile & { gifts: { title: string }[] | null };
+  const saved = (profile.gifts ?? []).map((g) => g.title);
+  const shown = Array.isArray(alreadyShown)
+    ? alreadyShown.filter((t): t is string => typeof t === 'string').slice(0, 200)
+    : [];
+  const avoid = [...saved, ...shown];
+
+  // Claude only helps when there's a note to read, so empty bios don't spend a credit.
+  let remaining: number | null = null;
+  let limitReached = false;
+  if (process.env.ANTHROPIC_API_KEY && profile.bio?.trim()) {
+    const { data: used, error } = await supabase.rpc('claim_gift_idea_credit');
+    if (error) {
+      console.error('Could not check the Magic ideas limit', error.message);
+    } else if (used === null) {
+      limitReached = true;
+    } else {
+      remaining = Math.max(0, DAILY_AI_IDEAS - Number(used));
+      const ai = await claudeGiftIdeas(profile, avoid);
+      if (ai && ai.length > 0) {
+        const topUp =
+          ai.length < 3 ? suggestGiftIdeas(profile, [...avoid, ...ai.map((i) => i.title)], 3 - ai.length).ideas : [];
+        return { ideas: [...ai, ...topUp], personalized: true, source: 'claude', remaining, limitReached: false };
+      }
+    }
   }
-  if (pool.length === 0) pool = GIFT_FALLBACK;
 
-  return pool[Math.floor(Math.random() * pool.length)];
+  return { ...suggestGiftIdeas(profile, avoid), source: 'rules', remaining, limitReached };
 }
 
 export async function signOut() {

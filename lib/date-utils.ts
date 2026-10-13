@@ -35,6 +35,13 @@ export function daysUntilBirthday(birthday: string, timezone: string): number {
   return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 }
 
+/** Age they're turning (or anniversary year) on the next occurrence; null if the date can't be resolved. */
+export function ageAtNextBirthday(birthday: string, timezone: string): number | null {
+  const next = nextBirthdayUTC(birthday, timezone);
+  if (Number.isNaN(next.getTime())) return null;
+  return Number(formatTz(next, 'yyyy', { timeZone: timezone })) - Number(birthday.slice(0, 4));
+}
+
 export function formatBirthday(birthday: string): string {
   const [, mm, dd] = birthday.split('-').map(Number);
   const date = new Date(Date.UTC(2000, mm - 1, dd));

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { AVATAR_COLORS, EVENT_TYPES, EventType } from '@/lib/types';
+import { AVATAR_COLORS, EVENT_TYPES, EventType, DEFAULT_LEAD_DAYS, LEAD_DAY_OPTIONS, parseLeadDays } from '@/lib/types';
 import { COMMON_TIMEZONES } from '@/lib/date-utils';
 import { suggestGiftIdeas, type GiftIdeasResult, type GiftProfile } from '@/lib/gift-ideas';
 import { claudeGiftIdeas } from '@/lib/claude-gift-ideas';
@@ -94,6 +94,7 @@ export async function addFriend(formData: FormData) {
   const address = String(formData.get('address') || '').trim() || null;
   const bio = String(formData.get('bio') || '').trim() || null;
   const birth_year_known = formData.get('birth_year_known') === 'on';
+  const lead_days = parseLeadDays(formData.get('lead_days'));
 
   if (!name || !birthday) return;
 
@@ -112,6 +113,7 @@ export async function addFriend(formData: FormData) {
       address,
       bio,
       color,
+      lead_days,
     })
     .select('id')
     .single();
@@ -134,10 +136,11 @@ export async function updateFriend(friendId: string, formData: FormData) {
   const address = String(formData.get('address') || '').trim() || null;
   const bio = String(formData.get('bio') || '').trim() || null;
   const birth_year_known = formData.get('birth_year_known') === 'on';
+  const lead_days = parseLeadDays(formData.get('lead_days'));
 
   const { error } = await supabase
     .from('friends')
-    .update({ name, event_type, birthday, timezone, city, address, bio, birth_year_known })
+    .update({ name, event_type, birthday, timezone, city, address, bio, birth_year_known, lead_days })
     .eq('id', friendId);
 
   if (error) throw new Error(error.message);
@@ -265,6 +268,22 @@ export async function generateGiftIdeas(friendId: string, alreadyShown: string[]
   }
 
   return suggestGiftIdeas(profile, avoid);
+}
+
+export async function updateReminderSettings(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const lead = Number(formData.get('default_lead_days'));
+  const default_lead_days = (LEAD_DAY_OPTIONS as readonly number[]).includes(lead) ? lead : DEFAULT_LEAD_DAYS;
+  const day_of_enabled = formData.get('day_of_enabled') === 'on';
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ default_lead_days, day_of_enabled })
+    .eq('user_id', user.id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath('/settings');
+  redirect('/settings?saved=1');
 }
 
 export async function signOut() {

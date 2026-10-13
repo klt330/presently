@@ -1,4 +1,4 @@
-import { Friend, EVENT_TYPES } from '@/lib/types';
+import { Friend, EVENT_TYPES, LEAD_DAY_OPTIONS, leadDaysLabel } from '@/lib/types';
 import { COMMON_TIMEZONES } from '@/lib/date-utils';
 
 export function FriendForm({
@@ -77,6 +77,25 @@ export function FriendForm({
         </select>
         <p className="text-xs text-muted mt-1">
           Used to time reminders and birthday wishes to their local day.
+        </p>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-muted mb-1">Remind me</label>
+        <select
+          name="lead_days"
+          defaultValue={friend?.lead_days ?? ''}
+          className="w-full rounded-xl border border-line px-3 py-2 text-sm bg-white focus-ring"
+        >
+          <option value="">My default (set in Settings)</option>
+          {LEAD_DAY_OPTIONS.map((d) => (
+            <option key={d} value={d}>
+              {leadDaysLabel(d)}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-muted mt-1">
+          When to email you a heads-up with their gift ideas. You&apos;ll also get a nudge on the day.
         </p>
       </div>
 

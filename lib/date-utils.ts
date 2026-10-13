@@ -22,11 +22,26 @@ export function nextBirthdayUTC(birthday: string, timezone: string): Date {
     timezone
   );
 
-  let candidate = fromZonedTime(`${thisYear}-${mm}-${dd}T00:00:00`, timezone);
+  // date-fns-tz returns Invalid Date for Feb 29 in a non-leap year, so celebrate on Feb 28 instead.
+  const onYear = (year: number) => {
+    const day = mm === '02' && dd === '29' && !isLeapYear(year) ? '28' : dd;
+    return fromZonedTime(`${year}-${mm}-${day}T00:00:00`, timezone);
+  };
+
+  let candidate = onYear(thisYear);
   if (candidate < startOfTodayZoned) {
-    candidate = fromZonedTime(`${thisYear + 1}-${mm}-${dd}T00:00:00`, timezone);
+    candidate = onYear(thisYear + 1);
   }
   return candidate;
+}
+
+function isLeapYear(year: number) {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+/** The next occurrence as a calendar date in their timezone, e.g. "2027-02-28". */
+export function nextOccurrenceDate(birthday: string, timezone: string): string {
+  return formatTz(nextBirthdayUTC(birthday, timezone), 'yyyy-MM-dd', { timeZone: timezone });
 }
 
 export function daysUntilBirthday(birthday: string, timezone: string): number {

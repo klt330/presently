@@ -40,6 +40,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Feeds the usage dashboard; failures are logged and never block the page.
+  if (user) {
+    const { error } = await supabase.rpc('record_activity');
+    if (error) console.error('record_activity failed', error.message);
+  }
+
   return (
     <html lang="en" className={`${display.variable} ${logo.variable} ${body.variable} ${mono.variable}`}>
       <body className="font-body text-ink min-h-screen flex flex-col">

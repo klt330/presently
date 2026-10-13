@@ -36,8 +36,21 @@ export interface Friend {
   bio: string | null;
   color: string;
   last_reminded_year: number | null;
+  lead_days: number | null; // null = use the user's default
   created_at: string;
   gifts?: Gift[];
+}
+
+export const LEAD_DAY_OPTIONS = [30, 14, 7, 3, 1] as const;
+export const DEFAULT_LEAD_DAYS = 14;
+
+export function leadDaysLabel(days: number): string {
+  return days === 1 ? '1 day before' : `${days} days before`;
+}
+
+export function parseLeadDays(raw: FormDataEntryValue | null): number | null {
+  const n = Number(raw);
+  return (LEAD_DAY_OPTIONS as readonly number[]).includes(n) ? n : null;
 }
 
 // The four approved brand colors, cycled through (not random) when a friend is created.

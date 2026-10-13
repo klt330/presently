@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { AVATAR_COLORS, EVENT_TYPES, EventType } from '@/lib/types';
 import { COMMON_TIMEZONES } from '@/lib/date-utils';
-import { suggestGiftIdeas, type GiftProfile, type MagicIdeasResult } from '@/lib/gift-ideas';
+import { suggestGiftIdeas, type GiftIdeasResult, type GiftProfile } from '@/lib/gift-ideas';
 import { claudeGiftIdeas } from '@/lib/claude-gift-ideas';
 
 async function requireUser() {
@@ -231,18 +231,15 @@ export async function unfurlUrl(
   };
 }
 
-// Must match the limit inside claim_gift_idea_credit() in supabase/migration_003.
-const DAILY_AI_IDEAS = 15;
-
 /** Suggestions only; nothing is saved until the user picks one. */
-export async function generateGiftIdeas(friendId: string, alreadyShown: string[]): Promise<MagicIdeasResult> {
+export async function generateGiftIdeas(friendId: string, alreadyShown: string[]): Promise<GiftIdeasResult> {
   const { supabase } = await requireUser();
   const { data: friend } = await supabase
     .from('friends')
     .select('bio, event_type, birthday, birth_year_known, city, timezone, gifts(title)')
     .eq('id', friendId)
     .single();
-  if (!friend) return { ideas: [], personalized: false, source: 'rules', remaining: null, limitReached: false };
+  if (!friend) return { ideas: [], personalized: false };
 
   const profile = friend as unknown as GiftProfile & { gifts: { title: string }[] | null };
   const saved = (profile.gifts ?? []).map((g) => g.title);
@@ -252,26 +249,22 @@ export async function generateGiftIdeas(friendId: string, alreadyShown: string[]
   const avoid = [...saved, ...shown];
 
   // Claude only helps when there's a note to read, so empty bios don't spend a credit.
-  let remaining: number | null = null;
-  let limitReached = false;
+  // The daily limit stays server-side: past it, users quietly get the built-in list.
   if (process.env.ANTHROPIC_API_KEY && profile.bio?.trim()) {
     const { data: used, error } = await supabase.rpc('claim_gift_idea_credit');
     if (error) {
       console.error('Could not check the Magic ideas limit', error.message);
-    } else if (used === null) {
-      limitReached = true;
-    } else {
-      remaining = Math.max(0, DAILY_AI_IDEAS - Number(used));
+    } else if (used !== null) {
       const ai = await claudeGiftIdeas(profile, avoid);
       if (ai && ai.length > 0) {
         const topUp =
           ai.length < 3 ? suggestGiftIdeas(profile, [...avoid, ...ai.map((i) => i.title)], 3 - ai.length).ideas : [];
-        return { ideas: [...ai, ...topUp], personalized: true, source: 'claude', remaining, limitReached: false };
+        return { ideas: [...ai, ...topUp], personalized: true };
       }
     }
   }
 
-  return { ...suggestGiftIdeas(profile, avoid), source: 'rules', remaining, limitReached };
+  return suggestGiftIdeas(profile, avoid);
 }
 
 export async function signOut() {

@@ -3,13 +3,6 @@ import { ageAtNextBirthday } from './date-utils';
 
 export type GiftSuggestion = { title: string; reason: string };
 export type GiftIdeasResult = { ideas: GiftSuggestion[]; personalized: boolean };
-export type MagicIdeasResult = GiftIdeasResult & {
-  source: 'claude' | 'rules';
-  // AI suggestions left today; null when AI wasn't used or the count is unknown.
-  remaining: number | null;
-  limitReached: boolean;
-};
-
 export type GiftProfile = {
   bio: string | null;
   event_type: EventType;

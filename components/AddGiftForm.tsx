@@ -2,23 +2,14 @@
 
 import { useState, useTransition } from 'react';
 import { addGift, generateGiftIdeas } from '@/lib/actions';
-import type { GiftSuggestion, MagicIdeasResult } from '@/lib/gift-ideas';
-
-function footerNote(meta: Omit<MagicIdeasResult, 'ideas'> | null): string {
-  if (!meta) return '';
-  if (meta.limitReached) return "You've used today's 15 AI picks, so these are from our classic list. More tomorrow.";
-  if (meta.source === 'claude') {
-    return meta.remaining === null ? 'Picked by AI from their bio' : `Picked by AI from their bio · ${meta.remaining} left today`;
-  }
-  return meta.personalized ? '' : 'Tip: add what they love to their bio for more personal ideas.';
-}
+import type { GiftSuggestion } from '@/lib/gift-ideas';
 
 export function AddGiftForm({ friendId }: { friendId: string }) {
   const [expanded, setExpanded] = useState(false);
   const [title, setTitle] = useState('');
   const [ideas, setIdeas] = useState<GiftSuggestion[] | null>(null);
   const [shown, setShown] = useState<string[]>([]);
-  const [meta, setMeta] = useState<Omit<MagicIdeasResult, 'ideas'> | null>(null);
+  const [personalized, setPersonalized] = useState(true);
   const [savingTitle, setSavingTitle] = useState<string | null>(null);
   const [isThinking, startThinking] = useTransition();
   const [, startSaving] = useTransition();
@@ -28,7 +19,7 @@ export function AddGiftForm({ friendId }: { friendId: string }) {
     startThinking(async () => {
       const result = await generateGiftIdeas(friendId, shown);
       setIdeas(result.ideas);
-      setMeta({ personalized: result.personalized, source: result.source, remaining: result.remaining, limitReached: result.limitReached });
+      setPersonalized(result.personalized);
       setShown((prev) => [...prev, ...result.ideas.map((i) => i.title)]);
     });
   }
@@ -138,7 +129,9 @@ export function AddGiftForm({ friendId }: { friendId: string }) {
           )}
 
           <div className="flex flex-wrap items-center justify-between gap-2 mt-2">
-            <p className="text-xs text-muted">{footerNote(meta)}</p>
+            <p className="text-xs text-muted">
+              {personalized ? '' : 'Tip: add what they love to their bio for more personal ideas.'}
+            </p>
             <button
               type="button"
               onClick={loadIdeas}
